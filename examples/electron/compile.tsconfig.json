@@ -111,9 +111,6 @@
       "path": "../../packages/typehierarchy/compile.tsconfig.json"
     },
     {
-      "path": "../../packages/typescript/compile.tsconfig.json"
-    },
-    {
       "path": "../../packages/userstorage/compile.tsconfig.json"
     },
     {
