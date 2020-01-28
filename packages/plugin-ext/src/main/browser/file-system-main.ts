@@ -14,13 +14,16 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-import { interfaces, injectable } from 'inversify';
+import { interfaces, injectable, inject } from 'inversify';
 import Uri from 'vscode-uri';
 import { Disposable, ResourceResolver, DisposableCollection } from '@theia/core';
 import { Resource } from '@theia/core/lib/common/resource';
 import URI from '@theia/core/lib/common/uri';
 import { MAIN_RPC_CONTEXT, FileSystemMain, FileSystemExt } from '../../common/plugin-api-rpc';
 import { RPCProtocol } from '../../common/rpc-protocol';
+import { FileSystemError } from '../../plugin/types-impl';
+import { UriComponents, Schemes } from '../../common/uri-components';
+import { FileSystem } from '@theia/filesystem/lib/common';
 
 export class FileSystemMainImpl implements FileSystemMain, Disposable {
 
@@ -54,6 +57,21 @@ export class FileSystemMainImpl implements FileSystemMain, Disposable {
         }
     }
 
+    async $readFile(uriComponents: UriComponents): Promise<string> {
+        const uri = Uri.revive(uriComponents);
+        const resource = this.resourceResolver.resolve(new URI(uri));
+        return resource.readContents();
+    }
+
+    async $writeFile(uriComponents: UriComponents, content: string): Promise<void> {
+        const uri = Uri.revive(uriComponents);
+        const resource = this.resourceResolver.resolve(new URI(uri));
+        if (!resource.saveContents) {
+            throw new FileSystemError(`'No write operation available on the resource for URI ${uriComponents}`);
+        }
+        return resource.saveContents(content);
+    }
+
 }
 
 @injectable()
@@ -63,7 +81,13 @@ export class FSResourceResolver implements ResourceResolver, Disposable {
     private providers = new Map<string, FSResourceProvider>();
     private toDispose = new DisposableCollection();
 
+    @inject(FileSystem)
+    private fileSystem: FileSystem;
+
     resolve(uri: URI): Resource {
+        if (uri.scheme === Schemes.FILE) {
+            return new FileResource(this.fileSystem, uri);
+        }
         const provider = this.providers.get(uri.scheme);
         if (provider) {
             return provider.get(uri);
@@ -123,6 +147,31 @@ export class FSResource implements Resource {
 
     saveContents(content: string, options?: { encoding?: string }): Promise<void> {
         return this.proxy.$writeFile(this.handle, Uri.parse(this.uri.toString()), content, options);
+    }
+
+    dispose(): void { }
+}
+
+/** Resource that delegates to theia FileSystem */
+export class FileResource implements Resource {
+
+    constructor(readonly fileSystem: FileSystem, readonly uri: URI) { }
+
+    async readContents(options?: { encoding?: string }): Promise<string> {
+        const file = await this.fileSystem.resolveContent(this.uri.toString(), options);
+        return file.content;
+    }
+
+    async saveContents(content: string, options?: { encoding?: string }): Promise<void> {
+        const uriStr = this.uri.toString();
+        const exist = await this.fileSystem.exists(uriStr);
+        let stat;
+        if (exist) {
+            stat = await this.fileSystem.getFileStat(uriStr);
+        } else {
+            stat = await this.fileSystem.createFile(uriStr);
+        }
+        await this.fileSystem.setContent(stat!, content, options);
     }
 
     dispose(): void { }

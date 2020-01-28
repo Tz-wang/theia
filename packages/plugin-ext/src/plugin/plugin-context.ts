@@ -383,6 +383,11 @@ export function createAPIFactory(
         };
 
         const workspace: typeof theia.workspace = {
+
+            get fs(): theia.FileSystem {
+                return fileSystemExt.fs;
+            },
+
             get rootPath(): string | undefined {
                 return workspaceExt.rootPath;
             },

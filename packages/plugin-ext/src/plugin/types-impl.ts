@@ -30,6 +30,7 @@ import { relative } from '../common/paths-util';
 import { startsWithIgnoreCase } from '../common/strings';
 import { MarkdownString, isMarkdownString } from './markdown-string';
 import { SymbolKind } from '../common/plugin-api-rpc-model';
+import { UriComponents } from '../common/uri-components';
 
 export class Disposable {
     private disposable: undefined | (() => void);
@@ -1319,6 +1320,49 @@ export enum FileType {
     File = 1,
     Directory = 2,
     SymbolicLink = 64
+}
+
+/**
+ * The `FileStat`-type represents metadata about a file
+ */
+export interface FileStat {
+    /**
+     * The type of the file, e.g. is a regular file, a directory, or symbolic link
+     * to a file.
+     */
+    type: FileType;
+    /**
+     * The creation timestamp in milliseconds elapsed since January 1, 1970 00:00:00 UTC.
+     */
+    ctime: number;
+    /**
+     * The modification timestamp in milliseconds elapsed since January 1, 1970 00:00:00 UTC.
+     */
+    mtime: number;
+    /**
+     * The size in bytes.
+     */
+    size: number;
+}
+
+export interface FileSystem {
+
+    /**
+     * Read the entire contents of a file.
+     *
+     * @param uri The uri of the file.
+     * @return An array of bytes or a thenable that resolves to such.
+     */
+    readFile(uri: UriComponents): Promise<Uint8Array>;
+
+    /**
+     * Write data to a file, replacing its entire contents.
+     *
+     * @param uri The uri of the file.
+     * @param content The new content of the file.
+     */
+    writeFile(uri: UriComponents, content: Uint8Array): Promise<void>;
+
 }
 
 export class ProgressOptions {
