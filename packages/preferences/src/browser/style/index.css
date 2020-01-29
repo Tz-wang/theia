@@ -17,3 +17,7 @@
 #preferences_container_widget .p-SplitPanel-handle {
     border-right: var(--theia-border-width) solid var(--theia-editorGroup-border);
 }
+
+#preferences_container_widget .p-TabBar-tabIcon {
+    line-height: var(--theia-content-line-height) !important;
+}
