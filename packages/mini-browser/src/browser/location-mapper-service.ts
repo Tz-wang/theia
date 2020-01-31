@@ -109,7 +109,7 @@ export class HttpsLocationMapper implements LocationMapper {
  * Location mapper for locations without a scheme.
  */
 @injectable()
-export class LocationWithoutSchemeMapper implements LocationMapper {
+export class RemoteLocationWithoutSchemeMapper implements LocationMapper {
 
     canHandle(location: string): MaybePromise<number> {
         return new URI(location).scheme === '' ? 1 : 0;
@@ -125,7 +125,7 @@ export class LocationWithoutSchemeMapper implements LocationMapper {
  * `file` URI location mapper.
  */
 @injectable()
-export class FileLocationMapper implements LocationMapper {
+export class RemoteFileLocationMapper implements LocationMapper {
 
     canHandle(location: string): MaybePromise<number> {
         return location.startsWith('file://') ? 1 : 0;
